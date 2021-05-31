@@ -1,0 +1,24 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+name: $(Build.BuildId)
+
+trigger:
+- none
+
+pool:
+  name: "Default"
+
+steps:
+
+- task: Docker@2
+  inputs:
+    command: 'buildAndPush'
+    containerRegistry: 'gundydc docker registry connection'
+    repository: 'infarm/$(service_name)'
+    Dockerfile: './src/Dockerfile'
+    buildContext: './src/'
+    tags: '$(Build.BuildId),latest'
+

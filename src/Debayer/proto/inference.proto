@@ -1,0 +1,64 @@
+/* This is owned by the Training Pipeline project. 
+This is to pass images to the inference to then create polygons, bins or tiles for the output. */
+
+syntax = "proto3";
+
+option csharp_namespace = "InFarm.Inference.Service.Proto";
+package inference;
+
+service Predict {
+    rpc RegisterPredict (InputImage) returns (PredictId);
+    rpc GetPredictStatus (PredictId) returns (PredictStatusQueryResult);
+    rpc GetPredictResult (PredictId) returns (PredictResult);
+    rpc CancelPredict (PredictId) returns (OperationResult);
+    rpc ChangePredictPriority (PredictPriorityChangeRequest) returns (OperationResult); 
+}
+
+message InputImage {
+    string id = 1; // A GUID of the image ID
+	string blobName = 2; // The name of the blob i.e. '2a2876ab-6225-4516-8593-b34758219f39.jpg'
+	string containerName = 3; // The name of the container that the blob is in i.e. 'cfb0889e-d9d5-452b-8f45-a506a80d4401'
+	string projectId = 4; // The project that the image is being processed as part of.
+	uint32 priority = 5; // [Optional] Applications should set to a default to be a priority of 1 (low) and only provide a higher int if the priority needs to be higher.
+}
+
+message PredictId {
+	string id = 1;
+}
+
+message PredictResult {
+	bytes output = 1;
+	PredictStatus PredictStatus = 2;
+}
+
+message OperationResult {
+	bool result = 1;
+}
+
+message PredictPriorityChangeRequest {
+	string id = 1;
+	int32 priority = 2;
+}
+
+message PredictStatusQueryResult {
+	PredictStatus PredictStatus = 1;
+}
+
+enum PredictStatus {
+	Idle = 0;
+	Queued = 1;
+	InProgress = 2;
+	Succeeded = 3;
+	Failed = 4;
+	Cancelled = 5;
+}
+
+/* 
+To generate, use the following command:
+Python
+python -m grpc_tools.protoc --python_betterproto_out=lib --proto_path=. Inference.proto 
+
+C++:
+protoc --proto_path=proto --cpp_out=. proto/inference.proto
+protoc --grpc_out=. --plugin=protoc-gen-grpc="C:\dev\vcpkg\packages\grpc_x64-windows\tools\grpc\grpc_cpp_plugin.exe" proto/inference.proto
+*/

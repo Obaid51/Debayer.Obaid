@@ -1,0 +1,118 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+option csharp_namespace = "InFarm.FileStreamer.gRPCServices";
+
+package filestream;
+
+/* Insipration: https://dev.to/techschoolguru/upload-file-in-chunks-with-client-streaming-grpc-golang-4loc
+TODO: Generalise further to ensure that streaming of any generic file is possible.
+*/
+
+service Transfer {
+	rpc FileStream (stream Image) returns (TransferResponse);
+}
+
+/* Used by the server inside of a container to ensure that the system is ready and running.
+TODO: implement as per: https://github.com/grpc/grpc/blob/master/doc/health-checking.md https://medium.com/@github.gkarthiks/implementing-healthchecks-in-grpc-containers-for-kubernetes-d5049989ab12
+*/
+service Health {
+	rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+	rpc Watch(HealthCheckRequest) returns (stream HealthCheckResponse);
+}
+
+message Image {
+	FrameMeta frameMeta = 1;
+	ImageChunk imageChunk = 2;
+}
+
+message ImageHash {
+	bytes fileHash = 1; // Needs to be computed seperately at both ends to ensure that it is truely the same. DO NOT RETURN THE SUPPLIED VALUE
+	HashAlgorithm hashAlgorithm = 2;
+}
+
+message FrameMeta {
+	uint32 frameIndex = 1; // [Required] Index start is 0
+	oneof timestamp {
+		EpochTimestamp epochTimestamp = 2; // The raw timestamp from the container.
+		google.protobuf.Timestamp protoTimestamp = 3; // The uncorrected timestamp of the capture.
+	}
+	ImageHash imageHash = 4; // [Required]
+	MaxSize frameSize = 5; // [Required] The size of the frame on disk that is expected to be transfered.
+	uint32 xAxisPixels = 9; // [Required] ImageWidth
+	uint32 yAxisPixels = 10; // [Required] ImageHeight
+	uint32 imageBitDepth = 11; // [Required]
+	uint32 imageBitDepthReal = 12; // [Required]
+	CameraId cameraId = 13; // [Required] This is either embedded in the camera 
+
+	string containerName = 6; // [optional] The container (zip, SEQ, tz etc.) container that contains the frames.
+	string xmpMeta = 7; // [optional] The XMP meta data for the frame.
+	string exifMeta = 8; // [optional] The EXIF meta data for the frame.
+}
+
+message TransferResponse {
+	ImageHash imageHash = 1;
+	uint32 size = 2;
+}
+
+message MaxSize {
+	uint32 size = 1;
+	SizeUnits unit = 2;
+}
+
+message ImageChunk {
+	uint32 chunkId = 1;
+	bytes frameChunk = 2; // A chunk of the frame
+}
+
+message EpochTimestamp {
+	uint64 seconds = 1;
+	double milliseconds = 2;
+	double microseconds = 3;
+}
+
+message CameraId {
+	string cameraId = 1; // [Required] The camera id should be the manufactures ID such as a serial number, but an internal ID can be used in place.
+	string lensId = 2; // [Optional] If unknown, leave. Ideally should be the lens serial number, but an internal ID can be used in place. 
+}
+
+enum HashAlgorithm {
+	SHA1 = 0;
+	SHA256 = 1;
+	SHA384 = 2;
+	SHA512 = 3;
+	MD5 = 4;
+}
+
+enum SizeUnits {
+	BYTE = 0; // bytes
+	KILO_BYTE = 1; // kilobyte
+	MEGA_BYTE = 2; // megabyte
+	GIGA_BYTE = 3; // gigabyte
+}
+
+message HealthCheckRequest {
+	string service = 1;
+}
+
+message HealthCheckResponse {
+	enum ServingStatus {
+		UNKNOWN = 0;
+		SERVING = 1;
+		NOT_SERVING = 2;
+		SERVICE_UNKNOWN = 3;  // Used only by the Watch method.
+	}
+	ServingStatus status = 1;
+}
+
+
+/* Generate with:
+C#
+protoc --proto_path=proto --csharp_out=gRPCServices --csharp_opt=file_extension=.g.cs, proto/FileStream.proto
+
+C++:
+protoc --proto_path=proto --cpp_out=. proto/FileStream.proto
+protoc --grpc_out=. --plugin=protoc-gen-grpc="C:\dev\vcpkg\packages\grpc_x64-windows\tools\grpc\grpc_cpp_plugin.exe" proto/FileStream.proto
+
+Python
+python -m grpc_tools.protoc --python_betterproto_out=lib --proto_path=. FileStream.proto
+*/

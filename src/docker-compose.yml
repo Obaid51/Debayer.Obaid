@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  debayer:
+    image: gundydc.azurecr.io/infarm/debayer:${TAG}
+    restart: always
+    ports:
+      - 50051:50051
+    env_file: deploy.env
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

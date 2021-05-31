@@ -1,0 +1,10 @@
+{
+    "name": "debayer",
+    "version": "0.0.1",
+    "dependencies": [
+        {
+            "name": "gRPC",
+            "version>=": "1.36.4"
+        }
+    ]
+}

@@ -1,0 +1,4 @@
+# Namespaces UUIDs to use for UUID Generator V5
+RAW=ebbacc66-80fc-494c-956e-9cfb9d99c13c
+JPEG=aaa362f8-4bf0-476a-86b6-dbfcd9a51fe4
+HEIF=1a082f7f-d7e1-4809-a35e-d33a4d546c75

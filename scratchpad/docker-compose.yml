@@ -1,0 +1,11 @@
+version: "3.6"
+
+services:
+  grpc-server:
+    build:
+      context: ./
+      dockerfile: ./dockerfile
+    env_file: .env
+    ports:
+      - 50051:50051
+      - 50052:50052

@@ -1,0 +1,4 @@
+protobuf
+elastic-apm
+# TODO: Monitor this package for when it is release properly
+git+https://github.com/danielgtaylor/python-betterproto.git
